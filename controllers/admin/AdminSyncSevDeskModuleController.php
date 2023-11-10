@@ -30,7 +30,9 @@ class AdminSyncSevDeskModuleController extends ModuleAdminController
         //print_r($this->getNextContactID($sevDeskUrl, $sevDeskToken)); // Get Next Contact ID
         //print_r($this->getNextInvoiceID($sevDeskUrl, $sevDeskToken)); // Get Next Invoice ID
         //print_r($this->getFirstContactId($sevDeskUrl, $sevDeskToken)); // Get First Contact For Testing Purpose
+        //print_r($this->getSevUserId($sevDeskUrl, $sevDeskToken)); // Get Sev User ID
         print_r($this->createInvoice($sevDeskUrl, $sevDeskToken)); // Create Invoice
+        //print_r($this->checkAccountId($sevDeskUrl, $sevDeskToken)); // Get Check Account ID
     }
 
     private function getContacts($sevDeskUrl, $sevDeskToken)
@@ -153,12 +155,27 @@ class AdminSyncSevDeskModuleController extends ModuleAdminController
          */
     }
 
-    private function getFirstContactId($sevDeskUrl, $sevDeskToken): string
+    private function getSevUserId($sevDeskUrl, $sevDeskToken): int
+    {
+        $ch = curl_init($sevDeskUrl . 'SevUser' . '?token=' . $sevDeskToken);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+        ]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPGET, true);
+
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        return (int)json_decode($response, true)['objects'][0]['id'];
+    }
+
+    private function getFirstContactId($sevDeskUrl, $sevDeskToken): int
     {
         $contacts = $this->getContacts($sevDeskUrl, $sevDeskToken);
         $firstContactId = $contacts['objects'][0]['id'];
 
-        return (string)$firstContactId;
+        return $firstContactId;
 
         /* Result:
          * Array ( [id] => 68328668 [objectName] => Contact )
@@ -229,94 +246,103 @@ class AdminSyncSevDeskModuleController extends ModuleAdminController
 
     private function createInvoice($sevDeskUrl, $sevDeskToken)
     {
+        $currentDate = date('Y-m-d');
 
         $invoiceData = [
             "invoice" => [
-                "id" => null,//$this->getNextInvoiceID($sevDeskUrl, $sevDeskToken),
-                "objectName" => "Invoice",
-                "invoiceNumber" => null,// "RE-1000",
+                "invoiceNumber" => null,//"RE-1000",
                 "contact" => [
                     "id" => $this->getFirstContactId($sevDeskUrl, $sevDeskToken),
                     "objectName" => "Contact"
                 ],
+                "invoiceDate" => $currentDate,
+                "header" => null,
+                "headText" => null,
+                "footText" => null,
+                "timeToPay" => 0,
+                "discountTime" => null,
+                "discount" => 0,
+                "addressName" => null,
+                "addressStreet" => 'Martin-Luther-Ring 16',
+                "addressZip" => '98574',
+                "addressCity" => 'Schmalkalden',
+                "addressCountry" => 'Deutschland',
+                "payDate" => $currentDate,
+                "deliveryDate" => $currentDate,
+                "status" => 200,
+                "smallSettlement" => 0,
                 "contactPerson" => [
-                    "id" => 0,
+                    "id" => $this->getSevUserId($sevDeskUrl, $sevDeskToken),
                     "objectName" => "SevUser"
                 ],
-                "invoiceDate" => "10.11.2023",
-                "header" => null,//"Invoice RE-1000",
-                "headText" => null,//"header information",
-                "footText" => null,//"footer information",
-                "timeToPay" => null,//20,
-                "discount" => 0,
-                "address" => "name\nstreet\npostCode city",
-                "addressCountry" => [
-                    "id" => 1,
-                    "objectName" => "StaticCountry"
-                ],
-                "payDate" => null,//"2019-08-24T14:15:22Z",
-                "deliveryDate" => null,//"01.01.2022",
-                "deliveryDateUntil" => null,
-                "status" => "100",
-                "smallSettlement" => 0,
                 "taxRate" => 19,
                 "taxText" => "Umsatzsteuer 19%",
+                "dunningLevel" => null,
+                "addressParentName" => null,
+                "addressContactRef" => null,
                 "taxType" => "default",
-                "taxSet" => null,
-                "paymentMethod" => [
-                    "id" => 21919,
-                    "objectName" => "PaymentMethod"
-                ],
-                "sendDate" => null,//"01.01.2020",
-                "invoiceType" => "RE",
-                "currency" => "EUR",
-                "showNet" => "1",
-                "sendType" => null,//"VPR",
+                "paymentMethod" => null,
+                "costCentre" => null,
+                "sendDate" => $currentDate,
                 "origin" => null,
+                "invoiceType" => "RE",
+                "accountIntervall" => null,
+                "accountLastInvoice" => null,
+                "accountNextInvoice" => null,
+                "reminderTotal" => null,
+                "reminderDebit" => null,
+                "reminderDeadline" => null,
+                "reminderCharge" => null,
+                "taxSet" => null,
+                "address" => '',//"Martin-Luther-Ring 16\n98574 Schmalkalden\nDeutschland",
+                "currency" => "EUR",
+                "entryType" => null,
                 "customerInternalNote" => null,
-                "mapAll" => true
+                "showNet" => "1",
+                "enshrined" => null,
+                "sendType" => null,
+                "deliveryDateUntil" => null,
+                "datevConnectOnline" => null,
+                "sendPaymentReceivedNotificationDate" => null,
+                "mapAll" => "true",
+                "objectName" => "Invoice"
             ],
             "invoicePosSave" => [
                 [
-                    "id" => null,
-                    "objectName" => "InvoicePos",
-                    "mapAll" => true,
-                    "part" => [
-                        "id" => 0,
-                        "objectName" => "Part"
-                    ],
+                    "part" => null,
                     "quantity" => 1,
                     "price" => 100,
                     "name" => "Dragonglass",
+                    "priority" => 100,
                     "unity" => [
                         "id" => 1,
                         "objectName" => "Unity"
                     ],
-                    "positionNumber" => 0,
-                    "text" => "string",
-                    "discount" => 0,
+                    "positionNumber" => null,
+                    "text" => null,
+                    "discount" => null,
                     "taxRate" => 19,
+                    "temporary" => null,
                     "priceGross" => 100,
-                    "priceTax" => 0
+                    "priceTax" => null,
+                    "mapAll" => "true",
+                    "objectName" => "InvoicePos"
                 ]
             ],
             "invoicePosDelete" => null,
-            "filename" => "string",
             "discountSave" => [
                 [
-                    "discount" => "true",
-                    "text" => "string",
-                    "percentage" => true,
-                    "value" => 0,
+                    "discount" => true, // oder "true" als String, je nach API-Anforderung
+                    "text" => "Rabattbeschreibung", // Beschreibung des Rabatts
+                    "percentage" => true, // true für prozentualen Rabatt, false für festen Betrag
+                    "value" => 10, // Rabattwert, z.B. 10% oder 10 Euro
                     "objectName" => "Discounts",
-                    "mapAll" => "true"
+                    "mapAll" => true
                 ]
             ],
-            "discountDelete" => null
+            "discountDelete" => null,
+            "takeDefaultAddress" => "true"
         ];
-
-        //$json = json_encode($invoiceData, JSON_PRETTY_PRINT);
-       // return $json;
 
 
         $ch = curl_init($sevDeskUrl . 'Invoice/Factory/saveInvoice');
@@ -332,8 +358,56 @@ class AdminSyncSevDeskModuleController extends ModuleAdminController
 
         curl_close($ch);
 
-       // return $response;
-        return json_encode($invoiceData) . '<br><br>' . $response;
+
+        $createdInvoiceId = json_decode($response, true)['objects']['invoice']['id'];
+        $totalAmountAfterDiscountAndTax = json_decode($response, true)['objects']['invoice']['sumGross'];
+
+
+        $paymentData = [
+            "amount" => (double)$totalAmountAfterDiscountAndTax,
+            "date" => $currentDate,
+            "type" => "N",
+            "checkAccount" => [
+                "id" => (int)$this->checkAccountId($sevDeskUrl, $sevDeskToken),
+                "objectName" => "CheckAccount"
+            ],
+            "checkAccountTransaction" => null,
+            "createFeed" => true // Behalten Sie true bei, um ein Feed-Element zu erstellen (falls von Ihrer API unterstützt)
+        ];
+
+
+        return $this->bookInvoice($sevDeskUrl, $sevDeskToken, $createdInvoiceId, $paymentData);
+    }
+
+    private function checkAccountId($sevDeskUrl, $sevDeskToken)
+    {
+        $ch = curl_init($sevDeskUrl . 'CheckAccount' . '?token=' . $sevDeskToken);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+        ]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPGET, true);
+
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        return json_decode($response, true)['objects'][0]['id'];
+    }
+
+    private function bookInvoice($sevDeskUrl, $sevDeskToken, $id, $paymentData)
+    {
+        $ch = curl_init($sevDeskUrl . 'Invoice/' . $id . '/bookAmount' . '?token=' . $sevDeskToken);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+        ]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($paymentData));
+
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        return $response;
     }
 
     private function getContactPerson($sevDeskUrl, $sevDeskToken)
