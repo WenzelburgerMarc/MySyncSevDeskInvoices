@@ -29,7 +29,7 @@ class AdminSyncSevDeskModuleController extends ModuleAdminController
         //print_r($this->getContacts($sevDeskUrl, $sevDeskToken)); // Get All Contacts
         //print_r($this->getNextContactID($sevDeskUrl, $sevDeskToken)); // Get Next Contact ID
         //print_r($this->getNextInvoiceID($sevDeskUrl, $sevDeskToken)); // Get Next Invoice ID
-        //print_r($this->getFirstContactForCreatingInvoice($sevDeskUrl, $sevDeskToken)); // Get First Contact For Testing Purpose
+        //print_r($this->getFirstContactId($sevDeskUrl, $sevDeskToken)); // Get First Contact For Testing Purpose
         print_r($this->createInvoice($sevDeskUrl, $sevDeskToken)); // Create Invoice
     }
 
@@ -153,15 +153,12 @@ class AdminSyncSevDeskModuleController extends ModuleAdminController
          */
     }
 
-    private function getFirstContactForCreatingInvoice($sevDeskUrl, $sevDeskToken)
+    private function getFirstContactId($sevDeskUrl, $sevDeskToken): string
     {
         $contacts = $this->getContacts($sevDeskUrl, $sevDeskToken);
-        $firstContact = $contacts['objects'][0]['id'];
+        $firstContactId = $contacts['objects'][0]['id'];
 
-        return array(
-            'id' => $firstContact,
-            'objectName' => 'Contact'
-        );
+        return (string)$firstContactId;
 
         /* Result:
          * Array ( [id] => 68328668 [objectName] => Contact )
@@ -199,7 +196,7 @@ class AdminSyncSevDeskModuleController extends ModuleAdminController
 
     }
 
-    private function getNextInvoiceID($sevDeskUrl, $sevDeskToken)
+    private function getNextInvoiceID($sevDeskUrl, $sevDeskToken): string
     {
         $ch = curl_init($sevDeskUrl . 'SevSequence/Factory/getByType?objectType=Invoice&type=RE' . '&token=' . $sevDeskToken);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
@@ -213,7 +210,7 @@ class AdminSyncSevDeskModuleController extends ModuleAdminController
 
         $arr = json_decode($response, true);
 
-        return $arr['objects']['id'];
+        return (string)$arr['objects']['id'];
 
         /* Result:
          * 9112362
@@ -235,30 +232,30 @@ class AdminSyncSevDeskModuleController extends ModuleAdminController
 
         $invoiceData = [
             "invoice" => [
-                "id" => $this->getNextInvoiceID($sevDeskUrl, $sevDeskToken),
+                "id" => null,//$this->getNextInvoiceID($sevDeskUrl, $sevDeskToken),
                 "objectName" => "Invoice",
-                "invoiceNumber" => "RE-1000",
+                "invoiceNumber" => null,// "RE-1000",
                 "contact" => [
-                    "id" => $this->getFirstContactForCreatingInvoice($sevDeskUrl, $sevDeskToken)['id'],
+                    "id" => $this->getFirstContactId($sevDeskUrl, $sevDeskToken),
                     "objectName" => "Contact"
                 ],
                 "contactPerson" => [
                     "id" => 0,
                     "objectName" => "SevUser"
                 ],
-                "invoiceDate" => "01.01.2022",
-                "header" => "Invoice RE-1000",
-                "headText" => "header information",
-                "footText" => "footer information",
-                "timeToPay" => 20,
+                "invoiceDate" => "10.11.2023",
+                "header" => null,//"Invoice RE-1000",
+                "headText" => null,//"header information",
+                "footText" => null,//"footer information",
+                "timeToPay" => null,//20,
                 "discount" => 0,
                 "address" => "name\nstreet\npostCode city",
                 "addressCountry" => [
                     "id" => 1,
                     "objectName" => "StaticCountry"
                 ],
-                "payDate" => "2019-08-24T14:15:22Z",
-                "deliveryDate" => "01.01.2022",
+                "payDate" => null,//"2019-08-24T14:15:22Z",
+                "deliveryDate" => null,//"01.01.2022",
                 "deliveryDateUntil" => null,
                 "status" => "100",
                 "smallSettlement" => 0,
@@ -270,11 +267,11 @@ class AdminSyncSevDeskModuleController extends ModuleAdminController
                     "id" => 21919,
                     "objectName" => "PaymentMethod"
                 ],
-                "sendDate" => "01.01.2020",
+                "sendDate" => null,//"01.01.2020",
                 "invoiceType" => "RE",
                 "currency" => "EUR",
                 "showNet" => "1",
-                "sendType" => "VPR",
+                "sendType" => null,//"VPR",
                 "origin" => null,
                 "customerInternalNote" => null,
                 "mapAll" => true
@@ -318,8 +315,11 @@ class AdminSyncSevDeskModuleController extends ModuleAdminController
             "discountDelete" => null
         ];
 
+        //$json = json_encode($invoiceData, JSON_PRETTY_PRINT);
+       // return $json;
 
-        $ch = curl_init($sevDeskUrl . 'Invoice/Factory/saveInvoice' . '?token=' . $sevDeskToken);
+
+        $ch = curl_init($sevDeskUrl . 'Invoice/Factory/saveInvoice');
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Authorization: ' . $sevDeskToken,
             'Content-Type: application/json',
@@ -332,7 +332,8 @@ class AdminSyncSevDeskModuleController extends ModuleAdminController
 
         curl_close($ch);
 
-        return $response;
+       // return $response;
+        return json_encode($invoiceData) . '<br><br>' . $response;
     }
 
     private function getContactPerson($sevDeskUrl, $sevDeskToken)
