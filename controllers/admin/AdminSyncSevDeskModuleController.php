@@ -26,12 +26,12 @@ class AdminSyncSevDeskModuleController extends ModuleAdminController
         $sevDeskUrl = 'https://my.sevdesk.de/api/v1/';
         $sevDeskToken = Configuration::get('MY_SYNC_SEVDESK_INVOICES_API_TOKEN');
 
-        //print_r($this->getContacts($sevDeskUrl, $sevDeskToken)); // Get All Contacts
+        print_r($this->getContacts($sevDeskUrl, $sevDeskToken)); // Get All Contacts
         //print_r($this->getNextContactID($sevDeskUrl, $sevDeskToken)); // Get Next Contact ID
         //print_r($this->getNextInvoiceID($sevDeskUrl, $sevDeskToken)); // Get Next Invoice ID
         //print_r($this->getFirstContactId($sevDeskUrl, $sevDeskToken)); // Get First Contact For Testing Purpose
         //print_r($this->getSevUserId($sevDeskUrl, $sevDeskToken)); // Get Sev User ID
-        print_r($this->createInvoice($sevDeskUrl, $sevDeskToken)); // Create Invoice
+        //print_r($this->createInvoice($sevDeskUrl, $sevDeskToken)); // Create Invoice
         //print_r($this->checkAccountId($sevDeskUrl, $sevDeskToken)); // Get Check Account ID
     }
 
@@ -210,6 +210,50 @@ class AdminSyncSevDeskModuleController extends ModuleAdminController
 
     private function createContact($sevDeskUrl, $sevDeskToken)
     {
+        $contactArray = [
+            'name' => 'string',
+            'status' => 100,
+            'customerNumber' => 'Customer-1337',
+            'parent' => [
+                'id' => 0,
+                'objectName' => 'Contact'
+            ],
+            'surename' => 'John',
+            'familyname' => 'Snow',
+            'titel' => 'Commander',
+            'category' => [
+                'id' => 3,
+                'objectName' => 'Category'
+            ],
+            'description' => 'Rightful king of the seven kingdoms',
+            'academicTitle' => 'string',
+            'gender' => 'string',
+            'name2' => 'Targaryen',
+            'birthday' => '2019-08-24',
+            'vatNumber' => 'string',
+            'bankAccount' => 'string',
+            'bankNumber' => 'string',
+            'defaultCashbackTime' => 0,
+            'defaultCashbackPercent' => 0,
+            'defaultTimeToPay' => 0,
+            'taxNumber' => 'string',
+            'taxOffice' => 'string',
+            'exemptVat' => true,
+            'taxType' => 'default',
+            'taxSet' => [
+                'id' => 0,
+                'objectName' => 'string'
+            ],
+            'defaultDiscountAmount' => 0,
+            'defaultDiscountPercentage' => true,
+            'buyerReference' => 'string',
+            'governmentAgency' => true,
+            'customFieldSetting' => [
+                'ps_contact_id' => 123
+            ],
+        ];
+
+        $ch = curl_init($sevDeskUrl . 'Contact');
 
     }
 

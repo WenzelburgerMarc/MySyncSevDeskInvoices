@@ -1,28 +1,28 @@
 <?php
 /**
-* 2007-2023 PrestaShop
-*
-* NOTICE OF LICENSE
-*
-* This source file is subject to the Academic Free License (AFL 3.0)
-* that is bundled with this package in the file LICENSE.txt.
-* It is also available through the world-wide-web at this URL:
-* http://opensource.org/licenses/afl-3.0.php
-* If you did not receive a copy of the license and are unable to
-* obtain it through the world-wide-web, please send an email
-* to license@prestashop.com so we can send you a copy immediately.
-*
-* DISCLAIMER
-*
-* Do not edit or add to this file if you wish to upgrade PrestaShop to newer
-* versions in the future. If you wish to customize PrestaShop for your
-* needs please refer to http://www.prestashop.com for more information.
-*
-*  @author    PrestaShop SA <contact@prestashop.com>
-*  @copyright 2007-2023 PrestaShop SA
-*  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
-*  International Registered Trademark & Property of PrestaShop SA
-*/
+ * 2007-2023 PrestaShop
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Academic Free License (AFL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/afl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@prestashop.com so we can send you a copy immediately.
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade PrestaShop to newer
+ * versions in the future. If you wish to customize PrestaShop for your
+ * needs please refer to http://www.prestashop.com for more information.
+ *
+ * @author    PrestaShop SA <contact@prestashop.com>
+ * @copyright 2007-2023 PrestaShop SA
+ * @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+ *  International Registered Trademark & Property of PrestaShop SA
+ */
 
 if (!defined('_PS_VERSION_')) {
     exit;
@@ -61,16 +61,17 @@ class MySyncSevDeskInvoices extends Module
      */
     public function install()
     {
-        Configuration::updateValue('MY_SYNC_SEVDESK_INVOICES_API_TOKEN', false);
+        // TODO: Clear token after finishing development
+        Configuration::updateValue('MY_SYNC_SEVDESK_INVOICES_API_TOKEN', 'bd39be47fc6506bd409ffc500fea3a9a');
 
-        return $this->installTab() && parent::install();
+        return $this->installTab() && $this->installLogSQL() && $this->installExistingSevDeskInvoicesSQL() && parent::install() && $this->registerHook('actionValidateOrder') && $this->registerHook('actionOrderStatusPostUpdate') && $this->addLog('Module installed');
     }
 
     public function uninstall()
     {
         Configuration::deleteByName('MY_SYNC_SEVDESK_INVOICES_API_TOKEN');
 
-        return $this->uninstallTab() && parent::uninstall();
+        return $this->uninstallTab() && $this->uninstallLogSQL() && $this->uninstallExistingSevDeskInvoicesSQL() && parent::uninstall() && $this->unregisterHook('actionValidateOrder') && $this->unregisterHook('actionOrderStatusPostUpdate');
     }
 
     /*
@@ -215,13 +216,366 @@ class MySyncSevDeskInvoices extends Module
         $this->context->controller->confirmations[] = $this->l('Settings updated');
     }
 
-    // hook for actionSetInvoice
-    public function hookActionSetInvoice($params)
+    // Needed hooks on invoice:
+    // create, edit, update, pay (plus/minus), delete, return, cancel, status update
+    // Types and status in sevDesk needs also to get changed
+
+    // Create New Invoice
+    // 1. Check if customer exists in sevDesk
+    // 2. If not, create new customer in sevDesk
+    // 3. Create new invoice in sevDesk
+    // 4. pay invoice in sevDesk
+
+
+    /**
+     * @throws PrestaShopDatabaseException
+     */
+    public function hookActionValidateOrder($params)
     {
-        $sevDeskUrl = 'https://my.sevdesk.de/api/v1/Invoice';
+        $sevDeskUrl = 'https://my.sevdesk.de/api/v1/';
         $sevDeskToken = Configuration::get('MY_SYNC_SEVDESK_INVOICES_API_TOKEN');
+        //$this->addLog(json_encode($params));
+        //$this->addExistingSevDeskInvoice($params['order']->id, 123456789);
+
+        // Check If Customer Exists
+
+        $customerID = $params['customer']->id;
+
+        $this->addLog(json_encode($params));
+
+        // Create New Customer
+        $sevDeskContactId = $this->createNewCustomerInSevDesk($sevDeskUrl, $sevDeskToken, $params);
+
+        $this->addLog('Created new customer in sevDesk with id: ' . $sevDeskContactId);
+
+        // Create New Invoice For Existing Customer
+        $createdInvoiceId = $this->createNewInvoiceInSevDesk($sevDeskUrl, $sevDeskToken, $params, $sevDeskContactId);
+        $this->addLog('Created new invoice in sevDesk with id: ' . $createdInvoiceId);
 
 
+        // Set Invoice As Paid if orderstatus paid = 1 if not ...
+
+
+    }
+
+    public function hookActionOrderStatusPostUpdate($params)
+    {
+        //$this->addLog(json_encode($params));
+    }
+
+
+    public function installExistingSevDeskInvoicesSQL()
+    {
+        $sql = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'sevdesk_invoices` (
+        `id_sevdesk_invoice` INT(11) NOT NULL AUTO_INCREMENT,
+        `id_order` INT(11) NOT NULL,
+        `id_sevdesk` INT(11) NOT NULL,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id_sevdesk_invoice`)
+    ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
+
+        return Db::getInstance()->execute($sql);
+    }
+
+
+    public function uninstallExistingSevDeskInvoicesSQL()
+    {
+        $sql = 'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'sevdesk_invoices`;';
+        return Db::getInstance()->execute($sql);
+    }
+
+    public function installLogSQL()
+    {
+        $sql = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'sevdesk_logs` (
+        `id_log` INT(11) NOT NULL AUTO_INCREMENT,
+        `log` TEXT NOT NULL,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id_log`)
+    ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
+
+        return Db::getInstance()->execute($sql);
+    }
+
+
+    public function uninstallLogSQL()
+    {
+        $sql = 'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'sevdesk_logs`;';
+        return Db::getInstance()->execute($sql);
+    }
+
+    public function addExistingSevDeskInvoice($id_prestashop_order, $id_sevdesk_invoice, $created_at = null, $updated_at = null)
+    {
+        $columns = '`id_order`, `id_sevdesk`';
+        $values = '\'' . pSQL($id_prestashop_order) . '\', \'' . pSQL($id_sevdesk_invoice) . '\'';
+
+        if ($created_at !== null) {
+            $columns .= ', `created_at`';
+            $values .= ', \'' . pSQL($created_at) . '\'';
+        }
+
+        if ($updated_at !== null) {
+            $columns .= ', `updated_at`';
+            $values .= ', \'' . pSQL($updated_at) . '\'';
+        }
+
+        $sql = 'INSERT INTO `' . _DB_PREFIX_ . 'sevdesk_invoices` (' . $columns . ') VALUES (' . $values . ');';
+        return Db::getInstance()->execute($sql);
+    }
+
+    public function addLog($text, $created_at = null, $updated_at = null)
+    {
+        $columns = '`log`';
+        $values = '\'' . pSQL($text) . '\'';
+
+        if ($created_at !== null) {
+            $columns .= ', `created_at`';
+            $values .= ', \'' . pSQL($created_at) . '\'';
+        }
+
+        if ($updated_at !== null) {
+            $columns .= ', `updated_at`';
+            $values .= ', \'' . pSQL($updated_at) . '\'';
+        }
+
+        $sql = 'INSERT INTO `' . _DB_PREFIX_ . 'sevdesk_logs` (' . $columns . ') VALUES (' . $values . ');';
+        return Db::getInstance()->execute($sql);
+    }
+
+    public function getCurrentTimestamp()
+    {
+        return date('Y-m-d H:i:s');
+    }
+
+    private function createNewCustomerInSevDesk($sevDeskUrl, $sevDeskToken, $params)
+    {
+        $genderID = $params['customer']->id_gender;
+        $gender = null;
+
+        if(!$params['customer']->company){
+            if($genderID === 1){
+                $gender = 'Herr';
+            }else if($genderID === 2) {
+                $gender = 'Frau';
+            }
+        }
+        $customerData = [
+            "name" => $params['customer']->company,
+            "status" => 1000,
+            "customerNumber" => null,
+            "parent" => null,
+            "surename" => $params['customer']->firstname,
+            "familyname" => $params['customer']->lastname,
+            "titel" => null,
+            "category" => [
+                "id" => 3,
+                "objectName" => "Category"
+            ],
+            "description" => null,
+            "academicTitle" => null,
+            "gender" => $gender,
+            "name2" => null,
+            "birthday" => $params['customer']->birthday,
+            "vatNumber" => null,
+            "bankAccount" => null,
+            "bankNumber" => null,
+            "defaultCashbackTime" => 0,
+            "defaultCashbackPercent" => 0,
+            "defaultTimeToPay" => 0,
+            "taxNumber" => null,
+            "taxOffice" => null,
+            "exemptVat" => true,
+            "taxType" => "default",
+            "taxSet" => null,
+            "defaultDiscountAmount" => 0,
+            "defaultDiscountPercentage" => true,
+            "buyerReference" => null,
+            "governmentAgency" => false,
+            "customFieldSetting" => [
+                "ps_contact_id" => $params['customer']->id
+            ]
+        ];
+
+        $ch = curl_init($sevDeskUrl . 'Contact');
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: ' . $sevDeskToken,
+            'Content-Type: application/json',
+        ]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($customerData));
+
+        $response = curl_exec($ch);
+
+        curl_close($ch);
+
+        return json_decode($response, true)['objects']['id'];
+
+    }
+
+
+    private function createNewInvoiceInSevDesk($sevDeskUrl, $sevDeskToken, $params, $sevDeskContactId)
+    {
+
+        $currentDate = date('Y-m-d');
+        $shippingAddressId = $params['order']->id_address_delivery;
+        $shippingAddress = new Address((int)$shippingAddressId);
+        $billingAddressId = $params['order']->id_address_invoice;
+        $billingAddress = new Address((int)$billingAddressId);
+
+        // Extract address details
+        $shippingAddressLine = $shippingAddress->address1 . ' ' . $shippingAddress->address2;
+        $shippingCity = $shippingAddress->city;
+        $shippingZip = $shippingAddress->postcode;
+        $shippingCountry =  Country::getNameById($this->context->language->id, $shippingAddress->id_country);
+
+        $billingAddressLine = $billingAddress->address1 . ' ' . $billingAddress->address2;
+        $billingCity = $billingAddress->city;
+        $billingZip = $billingAddress->postcode;
+        $billingCountry = $billingAddress->id_country;
+
+
+
+        $order = $params['order'];
+        $productList = $order->getProducts();
+
+
+        $products = [];
+
+        foreach ($productList as $product) {
+            $products[] = [
+                "part" => null,
+                "quantity" => $product['product_quantity'] ?? null,
+                "price" => $product['product_price'] ?? null,
+                "name" => $product['product_name'] ?? null,
+                "unity" => [
+                    "id" => 1,
+                    "objectName" => "Unity"
+                ],
+                "positionNumber" => null,
+                "text" => null,
+                "discount" => null,
+                "taxRate" => $product['tax_rate'] ?? null,
+                "temporary" => null,
+                "priceGross" => $product['product_price_wt'] ?? null,
+                "priceTax" => null,
+                "mapAll" => "true",
+                "objectName" => "InvoicePos"
+            ];
+        }
+
+        $invoiceData = [
+            "invoice" => [
+                "invoiceNumber" => null,//"RE-1000",
+                "contact" => [
+                    "id" => (int)$sevDeskContactId,
+                    "objectName" => "Contact"
+                ],
+                "invoiceDate" => $currentDate,
+                "header" => null,
+                "headText" => null,
+                "footText" => null,
+                "timeToPay" => 0,
+                "discountTime" => null,
+                "discount" => 0,
+                "addressName" => $params['customer']->company ?? $params['customer']->firstname . ' ' . $params['customer']->lastname,
+                "addressStreet" => $billingAddressLine,
+                "addressZip" => $billingZip,
+                "addressCity" => $billingCity,
+                "addressCountry" => [
+                    "id" => $billingCountry,
+                    "objectName" => "StaticCountry"
+                ],
+                "payDate" => $currentDate,
+                "deliveryDate" => $currentDate,
+                "status" => 200,
+                "smallSettlement" => 0,
+                "contactPerson" => [
+                    "id" => $this->getSevUserId($sevDeskUrl, $sevDeskToken),
+                    "objectName" => "SevUser"
+                ],
+                "taxRate" => 19,
+                "taxText" => "Umsatzsteuer 19%",
+                "dunningLevel" => null,
+                "addressParentName" => null,
+                "addressContactRef" => null,
+                "taxType" => "default",
+                "paymentMethod" => null,
+                "costCentre" => null,
+                "sendDate" => $currentDate,
+                "origin" => null,
+                "invoiceType" => "RE",
+                "accountIntervall" => null,
+                "accountLastInvoice" => null,
+                "accountNextInvoice" => null,
+                "reminderTotal" => null,
+                "reminderDebit" => null,
+                "reminderDeadline" => null,
+                "reminderCharge" => null,
+                "taxSet" => null,
+                "address" => "$shippingAddressLine\n$shippingZip $shippingCity\n$shippingCountry",
+                "currency" => "EUR",
+                "entryType" => null,
+                "customerInternalNote" => null,
+                "showNet" => "1",
+                "enshrined" => null,
+                "sendType" => null,
+                "deliveryDateUntil" => null,
+                "datevConnectOnline" => null,
+                "sendPaymentReceivedNotificationDate" => null,
+                "mapAll" => "true",
+                "objectName" => "Invoice"
+            ],
+            "invoicePosSave" => $products,
+            "invoicePosDelete" => null,
+            "discountSave" => [
+                [
+                    "discount" => true,
+                    "text" => "Rabatt",
+                    "percentage" => false,
+                    "value" => $params['order']->total_discounts_tax_excl,
+                    "objectName" => "Discounts",
+                    "mapAll" => true
+                ]
+            ],
+            "discountDelete" => null,
+            "takeDefaultAddress" => "true"
+        ];
+
+        $this->addLog(json_encode($invoiceData));
+
+        $ch = curl_init($sevDeskUrl . 'Invoice/Factory/saveInvoice');
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: ' . $sevDeskToken,
+            'Content-Type: application/json',
+        ]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($invoiceData));
+
+        $response = curl_exec($ch);
+
+        curl_close($ch);
+
+
+        $createdInvoiceId = json_decode($response, true)['objects']['invoice']['id'];
+        return $createdInvoiceId;
+    }
+
+    private function getSevUserId($sevDeskUrl, $sevDeskToken): int
+    {
+        $ch = curl_init($sevDeskUrl . 'SevUser' . '?token=' . $sevDeskToken);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+        ]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPGET, true);
+
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        return (int)json_decode($response, true)['objects'][0]['id'];
     }
 
 
