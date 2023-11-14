@@ -253,7 +253,13 @@ class MySyncSevDeskInvoices extends Module
         $this->addLog('Created new invoice in sevDesk with id: ' . $createdInvoiceId);
 
 
-        // Set Invoice As Paid if orderstatus paid = 1 if not ...
+        // Set Invoice As Paid if orderstatus paid = 1 if not do nothing or pay a bit?
+
+        // Danach beachte hook status update
+
+        // beachte ob die arrays falsch gefuellt wurden
+
+        // code aufraeumen + logs + fehler behandlung
 
 
     }
