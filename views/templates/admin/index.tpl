@@ -1,1 +1,0 @@
-DB View For Logs And Invoices

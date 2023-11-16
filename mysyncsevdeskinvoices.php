@@ -92,6 +92,8 @@ class MySyncSevDeskInvoices extends Module
         $tab->module = $this->name;
         $tab->id_parent = (int)Tab::getIdFromClassName('DEFAULT');
         $tab->icon = 'panorama_fish_eye';
+        $tab->route_name = 'syncsevdesk';
+        $tab->active = 1;
         foreach ($languages as $lang) {
             $tab->name[$lang['id_lang']] = $this->l('Sync SevDesk Invoices');
         }

@@ -1,0 +1,6 @@
+syncsevdesk:
+  path: mysyncsevdeskinvoices
+  methods: [GET]
+  defaults:
+      _controller: 'Mysyncsevdeskinvoices\Controller\AdminSyncController::indexAction'
+      _title: 'Index'

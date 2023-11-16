@@ -1,0 +1,13 @@
+{
+  "name": "marcfrompangoon/mysyncsevdeskinvoices",
+  "description": "Sync PS Invoices With SevDesk",
+  "autoload": {
+    "psr-4": {
+      "Mysyncsevdeskinvoices\\": "src/"
+    }
+  },
+  "config": {
+    "prepend-autoloader": false
+  },
+  "type": "prestashop-module"
+}

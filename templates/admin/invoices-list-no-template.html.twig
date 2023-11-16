@@ -1,0 +1,22 @@
+<h1>
+    Overview Of All Created Invoices
+</h1>
+
+<table class="table">
+    <thead>
+    <tr>
+        <th>#</th>
+        <th>PrestaShop Order Id</th>
+        <th>SevDesk Invoice Id</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for invoice in invoices %}
+        <tr>
+            <th scope="row">{{ invoice.id_sevdesk_invoice }}</th>
+            <td>{{ invoice.id_order }}</td>
+            <td>{{ invoice.id_sevdesk }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
