@@ -115,9 +115,12 @@ class MySyncSevDeskInvoices extends Module
         if(!isset($this->apiService))
             $this->apiService = new ApiService();
 
-        foreach ($this->settings as $key => $value) {
-            Configuration::deleteByName($key);
+        if(isset($this->settings)){
+            foreach ($this->settings as $key => $value) {
+                Configuration::deleteByName($key);
+            }
         }
+
 
         return $this->uninstallTab() && $this->databaseOperations->uninstallLogSQL() && $this->databaseOperations->uninstallExistingSevDeskInvoicesSQL() && parent::uninstall() && $this->unregisterHook('actionValidateOrder') && $this->unregisterHook('actionOrderStatusPostUpdate') && $this->unregisterHook('actionPaymentConfirmation');
     }
