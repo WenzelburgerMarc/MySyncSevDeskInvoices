@@ -23,7 +23,6 @@ class AdminSyncController extends FrameworkBundleAdminController
         return new Response(json_encode($logs), 200, ['Content-Type' => 'application/json']);
     }
 
-
     public function getInvoiceDataAction(){
         $invoiceData = $this->getInvoiceData();
         $invoices = [];
