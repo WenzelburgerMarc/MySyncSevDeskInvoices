@@ -166,7 +166,6 @@ class ApiService extends Module{
                 }
             }
 
-
             // Get all products from order and reformat it for sevDesk
             $order = $params['order'];
             $productList = $order->getProducts();
@@ -281,8 +280,6 @@ class ApiService extends Module{
                 "discountDelete" => null,
                 "takeDefaultAddress" => "true"
             ];
-
-            $databaseOperations->addLog('Invoice data: ' . json_encode($invoiceData, JSON_PRETTY_PRINT));
 
             $ch = curl_init($sevDeskUrl . 'Invoice/Factory/saveInvoice');
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
