@@ -20,6 +20,10 @@ $_MODULE['<{mysyncsevdeskinvoices}prestashop>mysyncsevdeskinvoices_52a825370d56d
 $_MODULE['<{mysyncsevdeskinvoices}prestashop>mysyncsevdeskinvoices_cea45288ac36f05d713317b92fa4e1af'] = 'Title for neutral (leave blank if not applicable)';
 $_MODULE['<{mysyncsevdeskinvoices}prestashop>mysyncsevdeskinvoices_a138c5d3c5876f156d27392d973a5ee8'] = 'Discount Text';
 $_MODULE['<{mysyncsevdeskinvoices}prestashop>mysyncsevdeskinvoices_87848ba460685a6ed162175fd24b00a9'] = 'Text for discount (e.g., Discount)';
+$_MODULE['<{mysyncsevdeskinvoices}prestashop>mysyncsevdeskinvoices_f6d24e5c53fc3ea9b4076b7902500e3e'] = 'Use Delivery Address';
+$_MODULE['<{mysyncsevdeskinvoices}prestashop>mysyncsevdeskinvoices_696daf7d8cd3653e2993b8df3f0499fd'] = 'If enabled, use the delivery address instead of the billing address in invoices.';
+$_MODULE['<{mysyncsevdeskinvoices}prestashop>mysyncsevdeskinvoices_00d23a76e43b46dae9ec7aa9dcbebb32'] = 'Enabled';
+$_MODULE['<{mysyncsevdeskinvoices}prestashop>mysyncsevdeskinvoices_b9f5c797ebbf55adccdd8539a65a0241'] = 'Disabled';
 $_MODULE['<{mysyncsevdeskinvoices}prestashop>mysyncsevdeskinvoices_c9cc8cce247e49bae79f15173ce97354'] = 'Save';
 $_MODULE['<{mysyncsevdeskinvoices}prestashop>mysyncsevdeskinvoices_c888438d14855d7d96a2724ee9c306bd'] = 'Settings updated';
 $_MODULE['<{mysyncsevdeskinvoices}prestashop>configure_1472ba9973548a4383f888715c13073e'] = 'Sync SevDesk Invoices';
