@@ -144,20 +144,28 @@ class ApiService extends Module{
                 throw new Exception('No billing country found in sevDesk');
             }
 
-            // Create Addresses
-            $billingAddressResponse = $this->createNewContactAddressInSevDesk($databaseOperations, $sevDeskUrl, $sevDeskToken, $sevDeskContactId, $params['customer']->firstname . ' ' . $params['customer']->lastname, $billingAddressLine, $billingCity, $billingZip, $billingCountryId);
-            if(!isset($billingAddressResponse)){
-                throw new Exception('Failed to create new billing address in sevDesk');
-            }
-            if ($billingAddressId !== $shippingAddressId) {
-                if(!isset($shippingCountryId)){
-                    throw new Exception('No shipping country found in sevDesk');
-                }
+            // Use delivery or billing address?
+            $useDelivery = Configuration::get('MY_SYNC_SEVDESK_USE_DELIVERY_ADDRESS');
+
+            if ($useDelivery && $billingAddressId !== $shippingAddressId) {
                 $shippingAddressResponse = $this->createNewContactAddressInSevDesk($databaseOperations, $sevDeskUrl, $sevDeskToken, $sevDeskContactId, $params['customer']->firstname . ' ' . $params['customer']->lastname, $shippingAddressLine, $shippingCity, $shippingZip, $shippingCountryId);
                 if(!isset($shippingAddressResponse)){
                     throw new Exception('Failed to create new shipping address in sevDesk');
                 }
             }
+
+            $billingAddressResponse = $this->createNewContactAddressInSevDesk($databaseOperations, $sevDeskUrl, $sevDeskToken, $sevDeskContactId, $params['customer']->firstname . ' ' . $params['customer']->lastname, $billingAddressLine, $billingCity, $billingZip, $billingCountryId);
+            if(!isset($billingAddressResponse)){
+                throw new Exception('Failed to create new billing address in sevDesk');
+            }
+
+            if (!$useDelivery && $billingAddressId !== $shippingAddressId) {
+                $shippingAddressResponse = $this->createNewContactAddressInSevDesk($databaseOperations, $sevDeskUrl, $sevDeskToken, $sevDeskContactId, $params['customer']->firstname . ' ' . $params['customer']->lastname, $shippingAddressLine, $shippingCity, $shippingZip, $shippingCountryId);
+                if(!isset($shippingAddressResponse)){
+                    throw new Exception('Failed to create new shipping address in sevDesk');
+                }
+            }
+
 
             // Get all products from order and reformat it for sevDesk
             $order = $params['order'];
@@ -192,6 +200,9 @@ class ApiService extends Module{
                 throw new Exception('No sevDesk user found');
             }
 
+            $name = $params['customer']->company ?? $params['customer']->firstname . ' ' . $params['customer']->lastname;
+            $address = $name . '\n' . ($useDelivery == 1 ? $shippingAddressLine . '\n' . $shippingZip . ' ' . $shippingCity : $billingAddressLine . '\n' . $billingZip . ' ' . $billingCity);
+
             // Reformat invoice data for sevDesk
             $invoiceData = [
                 "invoice" => [
@@ -208,13 +219,14 @@ class ApiService extends Module{
                     "discountTime" => null,
                     "discount" => 0,
                     "addressName" => $params['customer']->company ?? $params['customer']->firstname . ' ' . $params['customer']->lastname,
-                    "addressStreet" => $billingAddressLine,
-                    "addressZip" => $billingZip,
-                    "addressCity" => $billingCity,
+                    "addressStreet" => $useDelivery == 1 ? $shippingAddressLine : $billingAddressLine,
+                    "addressZip" => $useDelivery == 1 ? $shippingZip : $billingZip,
+                    "addressCity" => $useDelivery == 1 ? $shippingCity : $billingCity,
                     "addressCountry" => [
-                        "id" => $billingCountryId,
+                        "id" => $useDelivery == 1 ? $shippingCountryId : $billingCountryId,
                         "objectName" => "StaticCountry"
                     ],
+                    "address"=> $address,
                     "payDate" => $currentDate,
                     "deliveryDate" => $deliveryDateGoal,
                     "status" => 200,
@@ -269,6 +281,8 @@ class ApiService extends Module{
                 "discountDelete" => null,
                 "takeDefaultAddress" => "true"
             ];
+
+            $databaseOperations->addLog('Invoice data: ' . json_encode($invoiceData, JSON_PRETTY_PRINT));
 
             $ch = curl_init($sevDeskUrl . 'Invoice/Factory/saveInvoice');
             curl_setopt($ch, CURLOPT_HTTPHEADER, [

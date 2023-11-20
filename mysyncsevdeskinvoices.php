@@ -92,7 +92,8 @@ class MySyncSevDeskInvoices extends Module
             'MY_SYNC_SEVDESK_MALE_TITLE' =>  'Herr',
             'MY_SYNC_SEVDESK_FEMALE_TITLE' => 'Frau',
             'MY_SYNC_SEVDESK_NEUTRAL_TITLE' => '',
-            'MY_SYNC_SEVDESK_DISCOUNT_TEXT' => 'Rabatt'
+            'MY_SYNC_SEVDESK_DISCOUNT_TEXT' => 'Rabatt',
+            'MY_SYNC_SEVDESK_USE_DELIVERY_ADDRESS' => '0'
         ];
 
         foreach ($this->settings as $key => $value) {
@@ -267,7 +268,28 @@ class MySyncSevDeskInvoices extends Module
                         'desc' => $this->l('Text for discount (e.g., Discount)'),
                         'required' => false,
                         'default' => 'Rabatt'
-                    )
+                    ),
+                    array(
+                        'type' => 'switch',
+                        'label' => $this->l('Use Delivery Address'),
+                        'name' => 'MY_SYNC_SEVDESK_USE_DELIVERY_ADDRESS',
+                        'is_bool' => true,
+                        'required' => false,
+                        'default' => 0,
+                        'desc' => $this->l('If enabled, use the delivery address instead of the billing address in invoices.'),
+                        'values' => array(
+                            array(
+                                'id' => 'active_on',
+                                'value' => 1,
+                                'label' => $this->l('Enabled')
+                            ),
+                            array(
+                                'id' => 'active_off',
+                                'value' => 0,
+                                'label' => $this->l('Disabled')
+                            )
+                        ),
+                    ),
 
                 ),
                 'submit' => array(
@@ -287,7 +309,8 @@ class MySyncSevDeskInvoices extends Module
             'MY_SYNC_SEVDESK_MALE_TITLE' => Configuration::get('MY_SYNC_SEVDESK_MALE_TITLE', ''),
             'MY_SYNC_SEVDESK_FEMALE_TITLE' => Configuration::get('MY_SYNC_SEVDESK_FEMALE_TITLE', ''),
             'MY_SYNC_SEVDESK_NEUTRAL_TITLE' => Configuration::get('MY_SYNC_SEVDESK_NEUTRAL_TITLE', ''),
-            'MY_SYNC_SEVDESK_DISCOUNT_TEXT' => Configuration::get('MY_SYNC_SEVDESK_DISCOUNT_TEXT', '')
+            'MY_SYNC_SEVDESK_DISCOUNT_TEXT' => Configuration::get('MY_SYNC_SEVDESK_DISCOUNT_TEXT', ''),
+            'MY_SYNC_SEVDESK_USE_DELIVERY_ADDRESS' => Configuration::get('MY_SYNC_SEVDESK_USE_DELIVERY_ADDRESS', '')
         );
     }
 
