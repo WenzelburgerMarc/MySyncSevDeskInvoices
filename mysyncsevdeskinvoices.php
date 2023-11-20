@@ -31,9 +31,9 @@ if (!defined('_PS_VERSION_')) {
 class MySyncSevDeskInvoices extends Module
 {
     // Module Properties
-    protected $config_form = false;
     private $sevDeskUrl = 'https://my.sevdesk.de/api/v1/';
     private $sevDeskToken;
+    private $settings;
 
     // Constructor
     public function __construct()
@@ -62,14 +62,19 @@ class MySyncSevDeskInvoices extends Module
     // Install module
     public function install()
     {
-        // TODO: Clear token after finishing development
-        Configuration::updateValue('MY_SYNC_SEVDESK_INVOICES_API_TOKEN', 'bd39be47fc6506bd409ffc500fea3a9a'); // TODO: Remove token after finishing development
-        Configuration::updateValue('MY_SYNC_SEVDESK_DAYS_UNTIL_DELIVERY', '0');
-        Configuration::updateValue('MY_SYNC_SEVDESK_API_URL', 'https://my.sevdesk.de/api/v1/');
-        Configuration::updateValue('MY_SYNC_SEVDESK_MALE_TITLE', 'Herr');
-        Configuration::updateValue('MY_SYNC_SEVDESK_FEMALE_TITLE', 'Frau');
-        Configuration::updateValue('MY_SYNC_SEVDESK_NEUTRAL_TITLE', '');
-        Configuration::updateValue('MY_SYNC_SEVDESK_DISCOUNT_TEXT', 'Rabatt');
+        $this->settings = [
+            'MY_SYNC_SEVDESK_INVOICES_API_TOKEN' => 'bd39be47fc6506bd409ffc500fea3a9a', // TODO: Clear token after finishing development
+            'MY_SYNC_SEVDESK_DAYS_UNTIL_DELIVERY' => '0',
+            'My_SYNC_SEVDESK_API_URL' => 'https://my.sevdesk.de/api/v1/',
+            'MY_SYNC_SEVDESK_MALE_TITLE' =>  'Herr',
+            'MY_SYNC_SEVDESK_FEMALE_TITLE' => 'Frau',
+            'MY_SYNC_SEVDESK_NEUTRAL_TITLE' => '',
+            'MY_SYNC_SEVDESK_DISCOUNT_TEXT' => 'Rabatt'
+        ];
+
+        foreach ($this->settings as $key => $value) {
+            Configuration::updateValue($key, $value);
+        }
 
         return $this->installTab() && $this->installLogSQL() && $this->installExistingSevDeskInvoicesSQL() && parent::install() && $this->registerHook('actionValidateOrder') && $this->registerHook('actionOrderStatusPostUpdate') && $this->registerHook('actionPaymentConfirmation') && $this->addLog('Module installed');
     }
@@ -77,9 +82,10 @@ class MySyncSevDeskInvoices extends Module
     // Uninstall module
     public function uninstall()
     {
-        Configuration::deleteByName('MY_SYNC_SEVDESK_INVOICES_API_TOKEN');
-        Configuration::deleteByName('MY_SYNC_SEVDESK_DAYS_UNTIL_DELIVERY');
-        Configuration::deleteByName('MY_SYNC_SEVDESK_API_URL');
+
+        foreach ($this->settings as $key => $value) {
+            Configuration::deleteByName($key);
+        }
 
         return $this->uninstallTab() && $this->uninstallLogSQL() && $this->uninstallExistingSevDeskInvoicesSQL() && parent::uninstall() && $this->unregisterHook('actionValidateOrder') && $this->unregisterHook('actionOrderStatusPostUpdate') && $this->unregisterHook('actionPaymentConfirmation');
     }
@@ -136,14 +142,14 @@ class MySyncSevDeskInvoices extends Module
         PRIMARY KEY (`id_sevdesk_invoice`)
     ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
 
-        return Db::getInstance()->execute($sql);
+        return $this->executeSqlQuery($sql);
     }
 
     // Uninstall sevDesk invoices table from DB
     public function uninstallExistingSevDeskInvoicesSQL()
     {
         $sql = 'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'sevdesk_invoices`;';
-        return Db::getInstance()->execute($sql);
+        return $this->executeSqlQuery($sql);
     }
 
     // Install log table in DB
@@ -157,14 +163,14 @@ class MySyncSevDeskInvoices extends Module
         PRIMARY KEY (`id_log`)
     ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
 
-        return Db::getInstance()->execute($sql);
+        return $this->executeSqlQuery($sql);
     }
 
     // Uninstall log table from DB
     public function uninstallLogSQL()
     {
         $sql = 'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'sevdesk_logs`;';
-        return Db::getInstance()->execute($sql);
+        return $this->executeSqlQuery($sql);
     }
 
     // Load the configuration form
@@ -876,7 +882,7 @@ class MySyncSevDeskInvoices extends Module
         }
 
         $sql = 'INSERT INTO `' . _DB_PREFIX_ . 'sevdesk_invoices` (' . $columns . ') VALUES (' . $values . ');';
-        Db::getInstance()->execute($sql);
+        $this->executeSqlQuery($sql);
     }
 
     // Add new log in DB
@@ -898,7 +904,7 @@ class MySyncSevDeskInvoices extends Module
         }
 
         $sql = 'INSERT INTO `' . _DB_PREFIX_ . 'sevdesk_logs` (' . $columns . ') VALUES (' . $values . ');';
-        return Db::getInstance()->execute($sql);
+        return $this->executeSqlQuery($sql);
     }
 
     // Get all countries from sevdesk
@@ -1051,5 +1057,11 @@ class MySyncSevDeskInvoices extends Module
             curl_close($ch);
         }
     }
+
+    // Execute SQL Query
+    private function executeSqlQuery($sql) {
+        return Db::getInstance()->execute($sql);
+    }
+
 
 }
