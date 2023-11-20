@@ -295,18 +295,6 @@ class ApiService extends Module{
                 throw new Exception('cURL error: ' . curl_error($ch));
             }
 
-
-            // TODO: Only for testing
-            $paramsJson = json_encode($params, JSON_PRETTY_PRINT);
-            $invoiceDataJson = json_encode($invoiceData, JSON_PRETTY_PRINT);
-            $responseJson = json_encode(json_decode($response), JSON_PRETTY_PRINT);
-
-            $databaseOperations->addLog('Discount enabled?: ' . $params['order']->total_discounts);
-            $databaseOperations->addLog('Discount amount: ' . $params['order']->total_discounts_tax_excl);
-            $databaseOperations->addLog("Params: " . $paramsJson);
-            $databaseOperations->addLog("Invoice Data: " . $invoiceDataJson);
-            $databaseOperations->addLog("Response: " . $responseJson);
-
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             if ($httpCode != 200 && $httpCode != 201) {
                 throw new Exception("HTTP error: Status $httpCode");
