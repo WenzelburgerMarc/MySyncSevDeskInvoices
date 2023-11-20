@@ -63,7 +63,7 @@ class MySyncSevDeskInvoices extends Module
 
         $this->confirmUninstall = $this->l('Are You Sure That You Want To Uninstall This Module? No More Invoices Will Get Synchronized With SevDesk!');
 
-        $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
+        $this->ps_versions_compliancy = array('min' => '8.0', 'max' => _PS_VERSION_);
 
         // Database Operations
         if(!isset($this->databaseOperations))
