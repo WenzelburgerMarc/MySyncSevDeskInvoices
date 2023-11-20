@@ -63,12 +63,13 @@ class MySyncSevDeskInvoices extends Module
     public function install()
     {
         // TODO: Clear token after finishing development
-        Configuration::updateValue('MY_SYNC_SEVDESK_INVOICES_API_TOKEN', 'bd39be47fc6506bd409ffc500fea3a9a');
+        Configuration::updateValue('MY_SYNC_SEVDESK_INVOICES_API_TOKEN', 'bd39be47fc6506bd409ffc500fea3a9a'); // TODO: Remove token after finishing development
         Configuration::updateValue('MY_SYNC_SEVDESK_DAYS_UNTIL_DELIVERY', '0');
         Configuration::updateValue('MY_SYNC_SEVDESK_API_URL', 'https://my.sevdesk.de/api/v1/');
         Configuration::updateValue('MY_SYNC_SEVDESK_MALE_TITLE', 'Herr');
         Configuration::updateValue('MY_SYNC_SEVDESK_FEMALE_TITLE', 'Frau');
         Configuration::updateValue('MY_SYNC_SEVDESK_NEUTRAL_TITLE', '');
+        Configuration::updateValue('MY_SYNC_SEVDESK_DISCOUNT_TEXT', 'Rabatt');
 
         return $this->installTab() && $this->installLogSQL() && $this->installExistingSevDeskInvoicesSQL() && parent::install() && $this->registerHook('actionValidateOrder') && $this->registerHook('actionOrderStatusPostUpdate') && $this->registerHook('actionPaymentConfirmation') && $this->addLog('Module installed');
     }
@@ -266,7 +267,16 @@ class MySyncSevDeskInvoices extends Module
                         'desc' => $this->l('Title for neutral (leave blank if not applicable)'),
                         'required' => false,
                         'default' => ''
+                    ),
+                    array(
+                        'type' => 'text',
+                        'label' => $this->l('Discount Text'),
+                        'name' => 'MY_SYNC_SEVDESK_DISCOUNT_TEXT',
+                        'desc' => $this->l('Text for discount (e.g., Discount)'),
+                        'required' => false,
+                        'default' => 'Rabatt'
                     )
+
                 ),
                 'submit' => array(
                     'title' => $this->l('Save'),
@@ -284,7 +294,8 @@ class MySyncSevDeskInvoices extends Module
             'MY_SYNC_SEVDESK_API_URL' => Configuration::get('MY_SYNC_SEVDESK_API_URL', ''),
             'MY_SYNC_SEVDESK_MALE_TITLE' => Configuration::get('MY_SYNC_SEVDESK_MALE_TITLE', ''),
             'MY_SYNC_SEVDESK_FEMALE_TITLE' => Configuration::get('MY_SYNC_SEVDESK_FEMALE_TITLE', ''),
-            'MY_SYNC_SEVDESK_NEUTRAL_TITLE' => Configuration::get('MY_SYNC_SEVDESK_NEUTRAL_TITLE', '')
+            'MY_SYNC_SEVDESK_NEUTRAL_TITLE' => Configuration::get('MY_SYNC_SEVDESK_NEUTRAL_TITLE', ''),
+            'MY_SYNC_SEVDESK_DISCOUNT_TEXT' => Configuration::get('MY_SYNC_SEVDESK_DISCOUNT_TEXT', '')
         );
     }
 
@@ -602,7 +613,7 @@ class MySyncSevDeskInvoices extends Module
                 "discountSave" => [
                     [
                         "discount" => true,
-                        "text" => "Rabatt",
+                        "text" => Configuration::get('MY_SYNC_SEVDESK_DISCOUNT_TEXT', ''),
                         "percentage" => false,
                         "value" => $params['order']->total_discounts_tax_excl,
                         "objectName" => "Discounts",
@@ -659,6 +670,11 @@ class MySyncSevDeskInvoices extends Module
 
             $order_id = $params['id_order'];
             $amountPayed = $this->getTotalPaidAmountFromOrderId($order_id);
+
+            if($amountPayed === null){
+                throw new Exception('No payed amount found for ps_order with id: ' . $order_id);
+            }
+
             $sevDeskInvoiceId = $this->getSevDeskInvoiceIdByPsOrderId($order_id);
 
             if ($sevDeskInvoiceId === null) {
@@ -666,6 +682,10 @@ class MySyncSevDeskInvoices extends Module
             }
 
             $existingPaidAmount = $this->getExistingSevDeskPaidAmount($sevDeskInvoiceId);
+
+            if($existingPaidAmount === null){
+                throw new Exception('No existing paid amount found for sevDesk invoice with id: ' . $sevDeskInvoiceId);
+            }
 
             $totalAmountPaid = (double)$amountPayed - (double)$existingPaidAmount;
 
@@ -769,16 +789,6 @@ class MySyncSevDeskInvoices extends Module
 
             if (!isset($this->sevDeskUrl)) {
                 throw new Exception('No sevDesk url found');
-            }
-
-            if (!isset($this->sevDeskToken)) {
-                $this->addLog('No SevDesk token found');
-                return;
-            }
-
-            if (!isset($this->sevDeskUrl)) {
-                $this->addLog('No SevDesk url found');
-                return;
             }
 
             // Check if invoice exists
