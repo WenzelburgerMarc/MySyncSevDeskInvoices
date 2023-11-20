@@ -1,6 +1,20 @@
 syncsevdesk:
-  path: mysyncsevdeskinvoices
+  path: /mysyncsevdeskinvoices
   methods: [GET]
   defaults:
-      _controller: 'Mysyncsevdeskinvoices\Controller\AdminSyncController::indexAction'
-      _title: 'Index'
+    _controller: 'Mysyncsevdeskinvoices\Controller\AdminSyncController::indexAction'
+    _title: 'Index'
+
+syncsevdesk_get_log_data:
+  path: /mysyncsevdeskinvoices/logs
+  methods: [GET]
+  defaults:
+    _controller: 'Mysyncsevdeskinvoices\Controller\AdminSyncController::getLogDataAction'
+    _title: 'Get Log Data'
+
+syncsevdesk_get_invoice_data:
+  path: /mysyncsevdeskinvoices/invoices
+  methods: [GET]
+  defaults:
+    _controller: 'Mysyncsevdeskinvoices\Controller\AdminSyncController::getInvoiceDataAction'
+    _title: 'Get Invoice Data'

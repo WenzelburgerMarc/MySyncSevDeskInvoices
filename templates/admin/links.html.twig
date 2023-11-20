@@ -48,4 +48,47 @@
             {% include '@Modules/mysyncsevdeskinvoices/templates/admin/invoices-list-no-template.html.twig' %}
         </div>
     </div>
+    <button
+            class="btn btn-primary mt-3"
+            id="reloadButton"
+    >
+        {{ 'Reload'|trans({}, 'Admin.Global') }}
+    </button>
+
+    <script>
+        function reloadLogData() {
+            fetch('{{ path('syncsevdesk_get_log_data') }}')
+                .then(response => response.json())
+                .then(logs => {
+                    var logTableBody = document.querySelector('#list .table tbody');
+                    logTableBody.innerHTML = '';
+                    logs.forEach(log => {
+                        var row = logTableBody.insertRow();
+                        row.insertCell(0).innerText = log.id;
+                        row.insertCell(1).innerText = log.log;
+                    });
+                });
+        }
+
+        function reloadInvoiceData() {
+            fetch('{{ path('syncsevdesk_get_invoice_data') }}')
+                .then(response => response.json())
+                .then(invoices => {
+                    var invoiceTableBody = document.querySelector('#create .table tbody');
+                    invoiceTableBody.innerHTML = '';
+                    invoices.forEach(invoice => {
+                        var row = invoiceTableBody.insertRow();
+                        row.insertCell(0).innerText = invoice.id_sevdesk_invoice;
+                        row.insertCell(1).innerText = invoice.id_order;
+                        row.insertCell(2).innerText = invoice.id_sevdesk;
+                    });
+                });
+        }
+
+        document.getElementById('reloadButton').addEventListener('click', function() {
+            reloadLogData();
+            reloadInvoiceData();
+        });
+
+    </script>
 {% endblock %}
