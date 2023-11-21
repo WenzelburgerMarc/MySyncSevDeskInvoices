@@ -93,7 +93,8 @@ class MySyncSevDeskInvoices extends Module
             'MY_SYNC_SEVDESK_FEMALE_TITLE' => 'Frau',
             'MY_SYNC_SEVDESK_NEUTRAL_TITLE' => '',
             'MY_SYNC_SEVDESK_DISCOUNT_TEXT' => 'Rabatt',
-            'MY_SYNC_SEVDESK_USE_DELIVERY_ADDRESS' => '0'
+            'MY_SYNC_SEVDESK_USE_DELIVERY_ADDRESS' => '0',
+            'MY_SYNC_SEVDESK_TIME_TO_PAY' => '0'
         ];
 
         foreach ($this->settings as $key => $value) {
@@ -242,6 +243,15 @@ class MySyncSevDeskInvoices extends Module
                     ),
                     array(
                         'type' => 'text',
+                        'label' => $this->l('Days To Pay'),
+                        'name' => 'MY_SYNC_SEVDESK_TIME_TO_PAY',
+                        'desc' => $this->l('Order Date + Days To Pay = Latest Pay Date in Invoice'),
+                        'required' => true,
+                        'suffix' => 'days',
+                        'default' => '0'
+                    ),
+                    array(
+                        'type' => 'text',
                         'label' => $this->l('Male Title'),
                         'name' => 'MY_SYNC_SEVDESK_MALE_TITLE',
                         'desc' => $this->l('Title for male (e.g., Mr.)'),
@@ -313,7 +323,8 @@ class MySyncSevDeskInvoices extends Module
             'MY_SYNC_SEVDESK_FEMALE_TITLE' => Configuration::get('MY_SYNC_SEVDESK_FEMALE_TITLE', ''),
             'MY_SYNC_SEVDESK_NEUTRAL_TITLE' => Configuration::get('MY_SYNC_SEVDESK_NEUTRAL_TITLE', ''),
             'MY_SYNC_SEVDESK_DISCOUNT_TEXT' => Configuration::get('MY_SYNC_SEVDESK_DISCOUNT_TEXT', ''),
-            'MY_SYNC_SEVDESK_USE_DELIVERY_ADDRESS' => Configuration::get('MY_SYNC_SEVDESK_USE_DELIVERY_ADDRESS', '')
+            'MY_SYNC_SEVDESK_USE_DELIVERY_ADDRESS' => Configuration::get('MY_SYNC_SEVDESK_USE_DELIVERY_ADDRESS', ''),
+            'MY_SYNC_SEVDESK_TIME_TO_PAY' => Configuration::get('MY_SYNC_SEVDESK_TIME_TO_PAY', '')
         );
     }
 

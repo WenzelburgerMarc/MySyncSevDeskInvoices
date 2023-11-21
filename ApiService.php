@@ -214,7 +214,7 @@ class ApiService extends Module{
                     "header" => null,
                     "headText" => null,
                     "footText" => null,
-                    "timeToPay" => 0,
+                    "timeToPay" => (int)Configuration::get('MY_SYNC_SEVDESK_TIME_TO_PAY') ?? 0,
                     "discountTime" => null,
                     "discount" => 0,
                     "addressName" => $params['customer']->company ?? $params['customer']->firstname . ' ' . $params['customer']->lastname,
