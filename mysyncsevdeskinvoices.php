@@ -86,7 +86,7 @@ class MySyncSevDeskInvoices extends Module
             $this->apiService = new ApiService();
 
         $this->settings = [
-            'MY_SYNC_SEVDESK_INVOICES_API_TOKEN' => 'bd39be47fc6506bd409ffc500fea3a9a', // TODO: Clear token after finishing development
+            'MY_SYNC_SEVDESK_INVOICES_API_TOKEN' => '',
             'MY_SYNC_SEVDESK_API_REQUEST_URL' => 'https://my.sevdesk.de/api/v1/',
             'MY_SYNC_SEVDESK_DAYS_UNTIL_DELIVERY' => '0',
             'MY_SYNC_SEVDESK_MALE_TITLE' =>  'Herr',
